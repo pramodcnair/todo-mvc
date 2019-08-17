@@ -1,5 +1,6 @@
 ﻿using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
+using Microsoft.Extensions.Options;
 using Newtonsoft.Json;
 using System;
 using System.Collections.Generic;
@@ -8,18 +9,25 @@ using System.Linq;
 using System.Net.Http;
 using System.Threading.Tasks;
 using TodoMVC.Models;
+using TodoMVC.Utils;
 
 namespace TodoMVC.Controllers
 {
     public class TodoController : Controller
     {
+        private readonly IOptions<AzureAD> azureAd;
+        private readonly IApiClient apiClient;
+        public TodoController(IOptions<AzureAD> _azureAd, IApiClient _apiClient)
+        {
+            azureAd = _azureAd;
+            apiClient = _apiClient;
+        }
         public async Task<IActionResult> Index()
         {
             List<TodoItem> itemList = new List<TodoItem>();
-            HttpClient client = new HttpClient();
-            HttpRequestMessage request = new HttpRequestMessage(HttpMethod.Get, "http://localhost:58746/api/todo");
-            ////   request.Headers.Authorization = new AuthenticationHeaderValue("Bearer", result.AccessToken);
-            HttpResponseMessage response = await client.SendAsync(request);
+            apiClient.BaseUrl = azureAd.Value.ApiUrl;
+            apiClient.Route = "api/todoquery";
+            HttpResponseMessage response = await apiClient.Get();
             var responseString = await response.Content.ReadAsStringAsync();
             itemList = JsonConvert.DeserializeObject<List<TodoItem>>(responseString);
             return View(itemList);
@@ -28,17 +36,10 @@ namespace TodoMVC.Controllers
         [HttpPost]
         public async Task<ActionResult> Index(string item)
         {
-            HttpContent content = new StringContent(JsonConvert.SerializeObject(new { Description = item }), System.Text.Encoding.UTF8, "application/json");
+            apiClient.BaseUrl = azureAd.Value.ApiUrl;
+            apiClient.Route = "api/todocommand/add";
+            HttpResponseMessage response = await apiClient.Post(JsonConvert.SerializeObject(new { Description = item }));
 
-            HttpClient client = new HttpClient();
-            HttpRequestMessage request = new HttpRequestMessage(HttpMethod.Post, "http://localhost:58746/api/todo");
-         //   request.Headers.Authorization = new AuthenticationHeaderValue("Bearer", result.AccessToken);
-            request.Content = content;
-            HttpResponseMessage response = await client.SendAsync(request);
-
-            //
-            // Return the To Do List in the view.
-            //
             if (response.IsSuccessStatusCode)
             {
                 return RedirectToAction("Index");
@@ -48,11 +49,10 @@ namespace TodoMVC.Controllers
 
         public async Task<IActionResult> Edit(int id)
         {
-           TodoItem item = new TodoItem();
-            HttpClient client = new HttpClient();
-            HttpRequestMessage request = new HttpRequestMessage(HttpMethod.Get, "http://localhost:58746/api/todo/"+id);
-            ////   request.Headers.Authorization = new AuthenticationHeaderValue("Bearer", result.AccessToken);
-            HttpResponseMessage response = await client.SendAsync(request);
+            TodoItem item = new TodoItem();
+            apiClient.BaseUrl = azureAd.Value.ApiUrl;
+            apiClient.Route = "api/todoquery/" + id;
+            HttpResponseMessage response = await apiClient.Get();
             var responseString = await response.Content.ReadAsStringAsync();
             item = JsonConvert.DeserializeObject<TodoItem>(responseString);
             return View(item);
@@ -65,18 +65,15 @@ namespace TodoMVC.Controllers
             try
             {
                 var items = collection["Description"];
-                HttpContent content = new StringContent(JsonConvert.SerializeObject(new { Description = items[0] }), System.Text.Encoding.UTF8, "application/json");
-                HttpClient client = new HttpClient();
-                HttpRequestMessage request = new HttpRequestMessage(HttpMethod.Put, "http://localhost:58746/api/todo/" + id);
-                ////   request.Headers.Authorization = new AuthenticationHeaderValue("Bearer", result.AccessToken);
-                request.Content = content;
-                HttpResponseMessage response = await client.SendAsync(request);
+                apiClient.BaseUrl = azureAd.Value.ApiUrl;
+                apiClient.Route = "api/todocommand/update";
+                HttpResponseMessage response = await apiClient.Put(JsonConvert.SerializeObject(new { Id = id, Description = items[0] }));
 
                 if (response.IsSuccessStatusCode)
                 {
                     return RedirectToAction("Index");
                 }
-                return View("Error",new ErrorViewModel { RequestId = Activity.Current?.Id ?? HttpContext.TraceIdentifier });
+                return View("Error", new ErrorViewModel { RequestId = Activity.Current?.Id ?? HttpContext.TraceIdentifier });
             }
             catch
             {
@@ -87,10 +84,9 @@ namespace TodoMVC.Controllers
         public async Task<ActionResult> Delete(int id)
         {
             TodoItem item = new TodoItem();
-            HttpClient client = new HttpClient();
-            HttpRequestMessage request = new HttpRequestMessage(HttpMethod.Get, "http://localhost:58746/api/todo/" + id);
-            ////   request.Headers.Authorization = new AuthenticationHeaderValue("Bearer", result.AccessToken);
-            HttpResponseMessage response = await client.SendAsync(request);
+            apiClient.BaseUrl = azureAd.Value.ApiUrl;
+            apiClient.Route = "api/todoquery/" + id;
+            HttpResponseMessage response = await apiClient.Get();
             var responseString = await response.Content.ReadAsStringAsync();
             item = JsonConvert.DeserializeObject<TodoItem>(responseString);
             return View(item);
@@ -102,9 +98,9 @@ namespace TodoMVC.Controllers
         {
             try
             {
-                HttpClient client = new HttpClient();
-                HttpRequestMessage request = new HttpRequestMessage(HttpMethod.Delete, "http://localhost:58746/api/todo/" + id);
-                HttpResponseMessage response = await client.SendAsync(request);
+                apiClient.BaseUrl = azureAd.Value.ApiUrl;
+                apiClient.Route = "api/todocommand/delete";
+                HttpResponseMessage response = await apiClient.Delete(JsonConvert.SerializeObject(new { Id = id }));
 
                 if (response.IsSuccessStatusCode)
                 {
