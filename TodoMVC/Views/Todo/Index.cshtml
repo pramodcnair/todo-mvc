@@ -1,0 +1,25 @@
+﻿@model IEnumerable<TodoMVC.Models.TodoItem>
+@{
+    ViewBag.Title = "To Do List";
+}
+<form name="input" action="Todo" method="post">
+    New Item: <input type="text" name="item">
+    <input type="submit" value="Submit">
+</form>
+<table class="table table-bordered table-striped">
+    <tr>
+        <th colspan="3">Todo List</th>
+    </tr>
+    @foreach (var i in Model)
+    {
+    <tr>
+        <td>@i.Description</td>
+        <td>Created On @i.CreatedOn.ToString("dd MMM yyyy")</td>
+        <td>
+            @Html.ActionLink("Edit", "Edit", new {  id=i.Id  }) |
+            @Html.ActionLink("Delete", "Delete", new { id = i.Id })
+        </td>
+    </tr>
+    }
+</table>
+
