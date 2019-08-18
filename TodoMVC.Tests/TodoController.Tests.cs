@@ -10,7 +10,7 @@ using System.Text;
 using System.Threading.Tasks;
 using TodoMVC.Controllers;
 using TodoMVC.Models;
-using TodoMVC.Utils;
+using TodoMVC.Services;
 
 namespace Tests
 {

@@ -14,7 +14,7 @@ using Microsoft.AspNetCore.Mvc.Authorization;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 using TodoMVC.Models;
-using TodoMVC.Utils;
+using TodoMVC.Services;
 
 namespace TodoMVC
 {
@@ -31,6 +31,7 @@ namespace TodoMVC
         public void ConfigureServices(IServiceCollection services)
         {
             services.AddTransient(typeof(IApiClient), typeof(ApiClient));
+            services.AddSingleton(typeof(ITokenService), typeof(TokenService));
             services.Configure<CookiePolicyOptions>(options =>
             {
                 // This lambda determines whether user consent for non-essential cookies is needed for a given request.

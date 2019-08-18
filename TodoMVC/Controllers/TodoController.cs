@@ -9,7 +9,7 @@ using System.Linq;
 using System.Net.Http;
 using System.Threading.Tasks;
 using TodoMVC.Models;
-using TodoMVC.Utils;
+using TodoMVC.Services;
 
 namespace TodoMVC.Controllers
 {

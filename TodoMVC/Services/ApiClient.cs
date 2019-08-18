@@ -7,23 +7,27 @@ using System.Net.Http;
 using System.Net.Http.Headers;
 using System.Threading.Tasks;
 
-namespace TodoMVC.Utils
+namespace TodoMVC.Services
 {
     public class ApiClient : IApiClient
     {
+        private ITokenService tokenService;
         public Uri FullUrl { get; set; }
         public string BaseUrl { get; set; }
         public string Route { get; set; }
 
         private HttpClient client = new HttpClient();
         public string BearerToken { get; set; }
-
+        public ApiClient(ITokenService _tokenService)
+        {
+            tokenService = _tokenService;
+        }
         public async Task<HttpResponseMessage> Delete(string json)
         {
             GetFullUrl();
             HttpContent content = new StringContent(json, System.Text.Encoding.UTF8, "application/json");
             HttpRequestMessage request = new HttpRequestMessage(HttpMethod.Delete, FullUrl);
-            SetBearerToken(request);
+            await SetBearerTokenAsync(request);
             request.Content = content;
             return await client.SendAsync(request);
         }
@@ -32,7 +36,7 @@ namespace TodoMVC.Utils
         {
             GetFullUrl();
             HttpRequestMessage request = new HttpRequestMessage(HttpMethod.Get, FullUrl);
-            SetBearerToken(request);
+            await SetBearerTokenAsync(request);
             return await client.SendAsync(request);
         }
 
@@ -42,7 +46,7 @@ namespace TodoMVC.Utils
             GetFullUrl();
             HttpContent content = new StringContent(json, System.Text.Encoding.UTF8, "application/json");
             HttpRequestMessage request = new HttpRequestMessage(HttpMethod.Post, FullUrl);
-            SetBearerToken(request);
+            await SetBearerTokenAsync(request);
             request.Content = content;
             return await client.SendAsync(request);
         }
@@ -52,7 +56,7 @@ namespace TodoMVC.Utils
             GetFullUrl();
             HttpContent content = new StringContent(json, System.Text.Encoding.UTF8, "application/json");
             HttpRequestMessage request = new HttpRequestMessage(HttpMethod.Put, FullUrl);
-            SetBearerToken(request);
+            await SetBearerTokenAsync(request);
             request.Content = content;
             return await client.SendAsync(request);
         }
@@ -61,10 +65,10 @@ namespace TodoMVC.Utils
         {
             FullUrl = new Uri(Path.Combine(BaseUrl, Route).Replace("\\", "/"));
         }
-        private void SetBearerToken(HttpRequestMessage request)
+        private async Task SetBearerTokenAsync(HttpRequestMessage request)
         {
-            if (!string.IsNullOrEmpty(BearerToken))
-                request.Headers.Authorization = new AuthenticationHeaderValue("Bearer", BearerToken);
+            var token = await tokenService.GetToken();
+            request.Headers.Authorization = new AuthenticationHeaderValue("Bearer", token);
         }
 
     }
